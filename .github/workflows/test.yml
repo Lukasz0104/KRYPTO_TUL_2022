@@ -23,9 +23,8 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@v3.0.0
         with:
-          java-version: 17
-          java-package: jdk+fx
-          distribution: adopt
+          distribution: 'temurin'
+          java-version: '17'
       
       - name: Run mvn install
         run: mvn install
