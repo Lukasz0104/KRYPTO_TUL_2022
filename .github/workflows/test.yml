@@ -27,5 +27,4 @@ jobs:
           java-version: '17'
       
       - name: Run mvn install
-        run: mvn install
-        
+        run: mvn -ntp install
