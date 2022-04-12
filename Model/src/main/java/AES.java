@@ -1,3 +1,11 @@
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+
 public class AES {
     private final byte[] key;
     // private final int Nb = 4;
@@ -8,7 +16,7 @@ public class AES {
         this.key = key;
     }
 
-    public byte[] encrypt(byte[] block) {
+    public byte[] encryptBlock(byte[] block) {
         byte byteTwo = (byte) 2;
         byte byteThree = (byte) 3;
 
@@ -64,28 +72,17 @@ public class AES {
                 byte s2 = encrypted[4 * i + 2];
                 byte s3 = encrypted[4 * i + 3];
 
-
                 encrypted[4 * i] = (byte) (mul(byteTwo, s0) ^ mul(byteThree, s1) ^ s2 ^ s3);
-                encrypted[4 * i + 1]  = (byte) (s0 ^ mul(byteTwo, s1) ^ mul(byteThree, s2) ^ s3);
-                encrypted[4 * i + 2]  = (byte) (s0 ^ s1 ^ mul(byteTwo, s2) ^ mul(byteThree, s3));
-                encrypted[4 * i + 3]  = (byte) (mul(byteThree, s0) ^ s1 ^ s2 ^ mul(byteTwo, s3));
-
-
-                // encrypted[4 * i] = (byte) ((2 * s0) ^ (3 * s1) ^ (s2) ^ (s3));
-                // encrypted[4 * i + 1] = (byte) ((s0) ^ (2 * s1) ^ (3 * s2) ^ (s3));
-                // encrypted[4 * i + 2] = (byte) ((s0) ^ (s1) ^ (2 * s2) ^ (3 * s3));
-                // encrypted[4 * i + 3] = (byte) ((3 * s0) ^ (s1) ^ (s2) ^ (2 * s3));
-
-                // encrypted[4 * i] = (byte) ((((byte) 2) * s0) ^ (((byte) (3)) * s1) ^ s2 ^ s3);
-                // encrypted[4 * i + 1] = (byte) (s0 ^ (byte) (2 * s1) ^ (byte) (3 * s2) ^ s3);
-                // encrypted[4 * i + 2] = (byte) (s0 ^ s1 ^ (byte) (2 * s2) ^ (byte) (3 * s3));
-                // encrypted[4 * i + 3] = (byte) ((byte) (3 * s0) ^ s1 ^ s2 ^ (byte) (2 * s3));
+                encrypted[4 * i + 1] = (byte) (s0 ^ mul(byteTwo, s1) ^ mul(byteThree, s2) ^ s3);
+                encrypted[4 * i + 2] = (byte) (s0 ^ s1 ^ mul(byteTwo, s2) ^ mul(byteThree, s3));
+                encrypted[4 * i + 3] = (byte) (mul(byteThree, s0) ^ s1 ^ s2 ^ mul(byteTwo, s3));
             }
             // endregion
 
             // region AddRoundKey
             for (int i = 0; i < 16; i++) {
-                encrypted[i] ^= (byte) (((expandedKey[round][i / 4]) >> (8 * (3 - (i % 4)))) & 0xff);
+                int offset = 8 * (3 - (i % 4));
+                encrypted[i] ^= (byte) (((expandedKey[round][i / 4]) >> (offset)) & 0xff);
             }
             // endregion
         }
@@ -159,10 +156,9 @@ public class AES {
                     short b2 = Constants.SBox[a2 >> 4][a2 & 0b1111];
                     short b3 = Constants.SBox[a3 >> 4][a3 & 0b1111];
 
-
                     expanded[round][b] = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
 
-                    expanded[round][b] ^= (Constants.rcon[round - 1] << 24);
+                    expanded[round][b] ^= Constants.rcon[round - 1] << 24;
 
                     expanded[round][b] ^= expanded[round - 1][0];
 
@@ -187,12 +183,80 @@ public class AES {
     public byte mul(byte a, byte b) {
         byte output = 0;
         for (int i = 0; i < 8; i++) {
-            if ((b & 1) != 0)  {
+            if ((b & 1) != 0) {
                 output ^= a;
             }
             a = xtime(a);
             b = (byte) (b >> 1);
         }
         return output;
+    }
+
+    public byte[] encryptAllBytes(byte[] bytes) {
+        byte[] encrypted;
+        int size;
+        if (bytes.length % 16 == 0) {
+            size = bytes.length;
+        } else {
+            size = 16 * (bytes.length / 16 + 1);
+        }
+        encrypted = new byte[size];
+        byte[] encryptedBuffer = new byte[size];
+        byte[] buffer = new byte[16];
+        int count = 0;
+        int offset = 0;
+
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
+            do {
+                count = bais.readNBytes(buffer, 0, 16);
+                if (count < 16) {
+                    buffer[count] = (byte) count;
+                }
+
+                encryptedBuffer = encryptBlock(buffer);
+
+                System.arraycopy(encryptedBuffer, 0, encrypted, offset * 16, 16);
+                offset++;
+
+                Arrays.fill(buffer, (byte) 0);
+            } while (bais.available() > 0);
+
+        } catch (IOException ex) {
+
+        }
+
+        return encrypted;
+    }
+
+    public byte[] encryptString(String inp) {
+        return encryptAllBytes(inp.getBytes());
+    }
+
+    public void encryptFile(File inputFile, String outFile)
+            throws FileNotFoundException, IOException {
+
+        try (FileInputStream fis = new FileInputStream(inputFile);
+                FileOutputStream fos = new FileOutputStream(outFile)) {
+
+            byte[] encrypted = encryptAllBytes(fis.readAllBytes());
+            fos.write(encrypted);
+        }
+    }
+
+    public byte[] decryptBlock(byte[] block) {
+        return null;
+    }
+
+    public byte[] decryptAllBytes(byte[] bytes) {
+        return null;
+    }
+
+    public void decryptFile(File encryptedFile, String decryptedFilePath)
+            throws FileNotFoundException, IOException {
+        try (FileInputStream fis = new FileInputStream(encryptedFile);
+                FileOutputStream fos = new FileOutputStream(decryptedFilePath)) {
+
+            fos.write(decryptAllBytes(fis.readAllBytes()));
+        }
     }
 }
