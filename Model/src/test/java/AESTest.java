@@ -1,12 +1,13 @@
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -220,17 +221,83 @@ public class AESTest {
     }
 
     @Test
+    public void decryptFirstBlockWithSecondKeyTest() {
+        aes = new AES(key2);
+        byte[] encrypted = {
+                0x57, (byte) 0xef, 0x57, 0x60,
+                (byte) 0x95, (byte) 0xa2, (byte) 0x97, 0x49,
+                (byte) 0xc5, (byte) 0xd1, 0x48, (byte) 0xed,
+                (byte) 0xb4, 0x6c, (byte) 0xd5, 0x5f
+        };
+
+        assertArrayEquals(block1, aes.decryptBlock(encrypted));
+    }
+
+    @Test
+    public void decryptSecondBlockWithSecondKeyTest() {
+        aes = new AES(key2);
+        byte[] encrypted = {
+                0x11, 0x14, 0x27, 0x49,
+                (byte) 0x99, 0x3f, 0x21, (byte) 0x95,
+                0x5b, 0x07, (byte) 0xf5, (byte) 0xa2,
+                (byte) 0xed, (byte) 0x9c, (byte) 0x8e, 0x68
+        };
+
+        assertArrayEquals(block2, aes.decryptBlock(encrypted));
+    }
+
+    @Test
+    public void decryptAllBytesTest() {
+        aes = new AES(key1);
+        byte[] encrypted = {
+                (byte) 0x94, 0x77, (byte) 0xdf, 0x11,
+                0x66, 0x68, 0x39, (byte) 0xb7,
+                0x46, 0x34, 0x18, (byte) 0xd8,
+                0x06, 0x1a, (byte) 0xb3, 0x17,
+                (byte) 0x91, (byte) 0xa7, (byte) 0xa2, 0x51,
+                (byte) 0xee, 0x0a, (byte) 0x82, (byte) 0xc9,
+                0x5c, 0x47, 0x54, (byte) 0xd0,
+                0x5b, 0x5b, 0x3c, (byte) 0xfe
+        };
+        byte[] decrypted = {
+                0x00, 0x00, 0x01, 0x01,
+                0x03, 0x03, 0x07, 0x07,
+                0x0f, 0x0f, 0x1f, 0x1f,
+                0x3f, 0x3f, 0x7f, 0x7f,
+                0x11, 0x28, (byte) 0xea, 0x62,
+                (byte) 0xfa, (byte) 0xde, 0x2b, 0x6b,
+                (byte) 0xa8, (byte) 0x9d, 0x27, 0x32,
+                0x6d, (byte) 0x94, 0x7f, 0x12
+        };
+        assertArrayEquals(decrypted, aes.decryptAllBytes(encrypted));
+    }
+
+    @Test
+    public void decryptNotFullBlockTest() {
+        aes = new AES(key1);
+        byte[] block = {
+                0x00, 0x00, 0x01, 0x01,
+                0x03, 0x03, 0x07, 0x07,
+                0x0f, 0x0f, 0x1f
+        };
+        byte[] encrypted = aes.encryptAllBytes(block);
+        byte[] decrypted = aes.decryptAllBytes(encrypted);
+
+        assertArrayEquals(block, decrypted);
+    }
+
+    @Test
     @Order(1)
     public void encryptFileTest() {
         aes = new AES(key1);
         File originalFile = new File(parentDir, "original.txt");
-        String outFilePath = Paths.get(parentDir, "encrypted").toString();
+        String encryptedFilePath = Paths.get(parentDir, "encrypted").toString();
 
         try {
-            aes.encryptFile(originalFile, outFilePath);
+            aes.encryptFile(originalFile, encryptedFilePath);
 
-            File outFile = new File(outFilePath);
-            assertTrue(outFile.exists());
+            File encryptedFile = new File(encryptedFilePath);
+            assertTrue(encryptedFile.exists());
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -238,19 +305,22 @@ public class AESTest {
         }
     }
 
-    // @Test
-    // @Order(2)
-    // public void decryptFileTest() {
-    //     aes = new AES(key1);
-    //     File encrypted = new File(parentDir, "encrypted");
-    //     String decryptedFilePath = Paths.get(parentDir, "decrypted.txt").toString();
+    @Test
+    @Order(2)
+    public void decryptFileTest() {
+        aes = new AES(key1);
+        File encrypted = new File(parentDir, "encrypted");
+        String decryptedFilePath = Paths.get(parentDir, "decrypted.txt").toString();
 
-    //     try {
-    //         aes.decryptFile(encrypted, decryptedFilePath);
-    //         assertTrue((new File(decryptedFilePath)).exists());
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //         fail();
-    //     }
-    // }
+        try {
+            aes.decryptFile(encrypted, decryptedFilePath);
+            assertTrue((new File(decryptedFilePath)).exists());
+            assertEquals(-1L, Files.mismatch(
+                    Paths.get(parentDir, "original.txt"),
+                    Paths.get(parentDir, "decrypted.txt")));
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
 }
