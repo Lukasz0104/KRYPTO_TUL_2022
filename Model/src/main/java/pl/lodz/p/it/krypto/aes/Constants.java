@@ -1,3 +1,5 @@
+package pl.lodz.p.it.krypto.aes;
+
 public class Constants {
     private Constants() {
 
