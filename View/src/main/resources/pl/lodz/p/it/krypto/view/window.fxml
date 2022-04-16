@@ -45,26 +45,23 @@
 
 <FlowPane alignment="TOP_CENTER" columnHalignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="pl.lodz.p.it.krypto.view.Controller">
     <children>
-        <HBox fx:id="keyContainer" alignment="CENTER" nodeOrientation="LEFT_TO_RIGHT" prefHeight="45.0" prefWidth="402.0">
+        <HBox alignment="CENTER" nodeOrientation="LEFT_TO_RIGHT" prefHeight="45.0" prefWidth="497.0">
             <children>
                 <Label text="Klucz szyfrowania">
                     <padding>
                         <Insets left="20.0" right="20.0" />
                     </padding>
                 </Label>
-                <TextField fx:id="keyTextField">
-                    <padding>
-                        <Insets left="20.0" right="20.0" />
-                    </padding>
+                <TextField fx:id="keyTextField" alignment="CENTER_RIGHT" prefHeight="30.0" prefWidth="295.0" promptText="Wprowadź klucz">
                     <font>
-                        <Font size="15.0" />
+                        <Font size="16.0" />
                     </font>
                 </TextField>
             </children>
         </HBox>
         <HBox alignment="CENTER" prefHeight="55.0" prefWidth="487.0">
             <children>
-                <RadioButton fx:id="stringRadioButton" mnemonicParsing="false" selected="true" text="Szyfrowanie tekstu">
+                <RadioButton fx:id="stringRadioButton" mnemonicParsing="false" text="Szyfrowanie tekstu">
                     <toggleGroup>
                         <ToggleGroup fx:id="group" />
                     </toggleGroup>
@@ -75,20 +72,20 @@
                 <RadioButton fx:id="fileRadioButton" mnemonicParsing="false" text="Szyfrowanie pliku" toggleGroup="$group" />
             </children>
         </HBox>
-        <HBox fx:id="buttonsContainer" alignment="CENTER" prefHeight="44.0" prefWidth="426.0">
+        <HBox alignment="CENTER" prefHeight="59.0" prefWidth="426.0">
             <children>
-                <Button mnemonicParsing="false" text="Zaszyfruj">
+                <Button fx:id="encryptButton" mnemonicParsing="false" onAction="#encrypt" text="Zaszyfruj">
                     <HBox.margin>
                         <Insets left="30.0" right="30.0" />
                     </HBox.margin>
                 </Button>
-                <Button mnemonicParsing="false" text="Deszyfruj">
+                <Button fx:id="decryptButton" mnemonicParsing="false" onAction="#decrypt" text="Deszyfruj">
                     <HBox.margin>
                         <Insets left="30.0" right="30.0" />
                     </HBox.margin>
                 </Button>
             </children>
         </HBox>
-        <Pane prefHeight="232.0" prefWidth="494.0" fx:id="content"/>
+        <Pane fx:id="content" prefHeight="200.0" prefWidth="500.0" />
     </children>
 </FlowPane>

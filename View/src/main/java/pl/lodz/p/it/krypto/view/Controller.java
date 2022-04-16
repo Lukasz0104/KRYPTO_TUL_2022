@@ -1,17 +1,23 @@
 package pl.lodz.p.it.krypto.view;
 
 import java.io.IOException;
+import java.net.URL;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Button;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 
 public class Controller {
-    @FXML
-    private HBox keyContainer;
+    private final URL stringContent = getClass().getResource("textAreas.fxml");
+    private final URL fileContent = getClass().getResource("chooseFiles.fxml");
+    private boolean encryptText = true;
 
     @FXML
     private TextField keyTextField;
@@ -23,7 +29,10 @@ public class Controller {
     private RadioButton fileRadioButton;
 
     @FXML
-    private HBox buttonsContainer;
+    private Button encryptButton;
+
+    @FXML
+    private Button decryptButton;
 
     @FXML
     private ToggleGroup group = new ToggleGroup();
@@ -32,30 +41,50 @@ public class Controller {
     private Pane content;
 
     @FXML
+    private TextArea plainTextTextArea;
+
+    @FXML
+    private TextArea cypherTextTextArea;
+
+    @FXML
     public void initialize() {
-        System.out.println(group.getToggles());
 
-        group.selectedToggleProperty().addListener((observableValue, oldValue, newValue) -> {
-            RadioButton rb = (RadioButton) group.getSelectedToggle();
-
-            if (rb != null) {
-                System.out.println(rb.getText());
-
-                if (rb == stringRadioButton) {
-                    content.getChildren().clear();
+        group.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
+            @Override
+            public void changed(ObservableValue<? extends Toggle> observableValue,
+                                Toggle oldToggle,
+                                Toggle newToggle) {
+                if (oldToggle != newToggle) {
+                    System.out.println(((RadioButton) newToggle).getText());
                     try {
-                        content.getChildren().add(FXMLLoader.load(getClass().getResource("textAreas.fxml")));
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                        FXMLLoader loader;
+                        if (newToggle == stringRadioButton) {
+                            encryptText = true;
+                            loader = new FXMLLoader(stringContent);
+                        } else {
+                            encryptText = false;
+                            loader = new FXMLLoader(fileContent);
+                        }
+                        loader.setController(this);
+                        Pane pane = loader.load();
+                        content.getChildren().clear();
+                        content.getChildren().setAll(pane);
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
                     }
-                } else {
-                    content.getChildren().clear();
                 }
             }
         });
+        stringRadioButton.setSelected(true);
     }
 
-    public Controller() {
+    @FXML
+    public void encrypt() {
+
+    }
+
+    @FXML
+    public void decrypt() {
 
     }
 }
