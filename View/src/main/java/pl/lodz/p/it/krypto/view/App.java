@@ -7,13 +7,13 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class App extends Application {
-    private Controller controller;
+    public static Stage stage;
 
     @Override
     public void start(Stage stage) throws Exception {
+        App.stage = stage;
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("window.fxml"));
         Parent root = fxmlLoader.load();
-        controller = fxmlLoader.getController();
         Scene scene = new Scene(root);
         stage.setScene(scene);
         stage.setTitle("AES");
