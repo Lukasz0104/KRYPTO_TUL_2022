@@ -70,10 +70,9 @@ public class Controller {
 
         keyTextField.textProperty().addListener((observableValue, oldValue, newValue) -> {
             if (newValue != null && !newValue.equals(oldValue)) {
-                if (bitButton.isSelected()) {
+                if (bitButton.isSelected() && newValue.length() == 32) {
                     disableButtons = HexFormat.of().parseHex(newValue).length != 16;
-                }
-                else {
+                } else if (!bitButton.isSelected()) {
                     disableButtons = newValue.getBytes(StandardCharsets.US_ASCII).length != 16;
                 }
                 encryptButton.disableProperty().set(disableButtons);
