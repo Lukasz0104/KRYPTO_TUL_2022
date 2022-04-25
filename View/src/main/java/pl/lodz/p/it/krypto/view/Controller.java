@@ -29,6 +29,9 @@ public class Controller {
     private TextField keyTextField;
 
     @FXML
+    private RadioButton bitButton;
+
+    @FXML
     private RadioButton stringRadioButton;
 
     @FXML
@@ -67,7 +70,12 @@ public class Controller {
 
         keyTextField.textProperty().addListener((observableValue, oldValue, newValue) -> {
             if (newValue != null && !newValue.equals(oldValue)) {
-                disableButtons = newValue.getBytes(StandardCharsets.US_ASCII).length != 16;
+                if (bitButton.isSelected()) {
+                    disableButtons = HexFormat.of().parseHex(newValue).length != 16;
+                }
+                else {
+                    disableButtons = newValue.getBytes(StandardCharsets.US_ASCII).length != 16;
+                }
                 encryptButton.disableProperty().set(disableButtons);
                 decryptButton.disableProperty().set(disableButtons);
             }
