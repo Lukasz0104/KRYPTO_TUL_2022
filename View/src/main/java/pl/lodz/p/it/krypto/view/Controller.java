@@ -70,8 +70,11 @@ public class Controller {
 
         keyTextField.textProperty().addListener((observableValue, oldValue, newValue) -> {
             if (newValue != null && !newValue.equals(oldValue)) {
-                if (bitButton.isSelected() && newValue.length() == 32) {
-                    disableButtons = HexFormat.of().parseHex(newValue).length != 16;
+                if (bitButton.isSelected()) {
+                    disableButtons = true;
+                    if (newValue.matches("^[0-9a-fA-F]{32}$")) {
+                        disableButtons = (HexFormat.of().parseHex(newValue).length != 16);
+                    }
                 } else if (!bitButton.isSelected()) {
                     disableButtons = newValue.getBytes(StandardCharsets.US_ASCII).length != 16;
                 }
@@ -114,7 +117,13 @@ public class Controller {
 
     @FXML
     public void encrypt() {
-        AES aes = new AES(keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII));
+        byte[] key;
+        if (bitButton.isSelected()) {
+            key = HexFormat.of().parseHex(keyTextField.textProperty().get());
+        } else {
+            key = keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII);
+        }
+        AES aes = new AES(key);
         if (encryptTextBinding.get()) {
             byte[] original = plainTextTextArea.getText().getBytes(StandardCharsets.UTF_8);
             byte[] encrypted = aes.encryptAllBytes(original);
@@ -132,7 +141,13 @@ public class Controller {
 
     @FXML
     public void decrypt() {
-        AES aes = new AES(keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII));
+        byte[] key;
+        if (bitButton.isSelected()) {
+            key = HexFormat.of().parseHex(keyTextField.textProperty().get());
+        } else {
+            key = keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII);
+        }
+        AES aes = new AES(key);
         if (encryptTextBinding.get()) {
             String s = cypherTextTextArea.getText();
             byte[] cypherText = HexFormat.of().parseHex(s);

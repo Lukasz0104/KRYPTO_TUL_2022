@@ -54,7 +54,7 @@
                         <Insets left="20.0" right="20.0" />
                     </padding>
                 </Label>
-                <TextField fx:id="keyTextField" alignment="CENTER_RIGHT" prefHeight="30.0" prefWidth="295.0" promptText="Wprowadź klucz">
+                <TextField fx:id="keyTextField" alignment="CENTER_RIGHT" prefHeight="35.0" prefWidth="358.0" promptText="Wprowadź klucz">
                     <font>
                         <Font size="16.0" />
                     </font>
@@ -102,7 +102,7 @@
                         <Insets right="15.0" />
                      </HBox.margin>
                   </TextArea>
-                  <TextArea fx:id="cypherTextTextArea" prefHeight="200.0" prefWidth="225.0" promptText="Wprowadź tekst do odszyfrowania" style="-fx-border-color: #000;" wrapText="true">
+                  <TextArea fx:id="cypherTextTextArea" prefHeight="200.0" prefWidth="225.0" promptText="Wprowadź tekst do odszyfrowania jako ciąg bajtów zapisanych w systemie szesnastkowym" style="-fx-border-color: #000;" wrapText="true">
                      <HBox.margin>
                         <Insets left="15.0" />
                      </HBox.margin>
