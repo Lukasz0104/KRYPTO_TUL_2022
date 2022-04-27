@@ -7,6 +7,7 @@ import java.util.HexFormat;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
@@ -63,8 +64,6 @@ public class Controller {
 
     @FXML
     public void initialize() {
-        encryptButton.disableProperty().set(disableButtons);
-        decryptButton.disableProperty().set(disableButtons);
         encryptTextBinding = Bindings.equal(stringRadioButton, group.selectedToggleProperty());
         stringRadioButton.setSelected(true);
 
@@ -73,7 +72,7 @@ public class Controller {
                 if (bitButton.isSelected()) {
                     disableButtons = true;
                     if (newValue.matches("^[0-9a-fA-F]{32}$")) {
-                        disableButtons = (HexFormat.of().parseHex(newValue).length != 16);
+                        disableButtons = HexFormat.of().parseHex(newValue).length != 16;
                     }
                 } else if (!bitButton.isSelected()) {
                     disableButtons = newValue.getBytes(StandardCharsets.US_ASCII).length != 16;
@@ -82,6 +81,22 @@ public class Controller {
                 decryptButton.disableProperty().set(disableButtons);
             }
         });
+
+        bitButton.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
+            if (newValue != null && newValue != oldValue) {
+                String enteredKey = keyTextField.getText();
+                if (newValue) {
+                    disableButtons = !enteredKey.matches("^[0-9a-fA-F]{32}$")
+                            || HexFormat.of().parseHex(enteredKey).length != 16;
+                } else {
+                    disableButtons = enteredKey.getBytes(StandardCharsets.US_ASCII).length != 16;
+                }
+
+                encryptButton.disableProperty().set(disableButtons);
+                decryptButton.disableProperty().set(disableButtons);
+            }
+        });
+
         keyTextField.textProperty().set("");
 
         textControlsContainer.visibleProperty().bind(encryptTextBinding);
@@ -117,6 +132,7 @@ public class Controller {
 
     @FXML
     public void encrypt() {
+        Alert alert;
         byte[] key;
         if (bitButton.isSelected()) {
             key = HexFormat.of().parseHex(keyTextField.textProperty().get());
@@ -124,23 +140,39 @@ public class Controller {
             key = keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII);
         }
         AES aes = new AES(key);
-        if (encryptTextBinding.get()) {
-            byte[] original = plainTextTextArea.getText().getBytes(StandardCharsets.UTF_8);
-            byte[] encrypted = aes.encryptAllBytes(original);
-            String encryptedString = HexFormat.of().formatHex(encrypted);
-            cypherTextTextArea.setText(encryptedString);
-        } else if (inputFile != null && outFile != null) {
-            try {
-                aes.encryptFile(inputFile, outFile.getAbsolutePath());
-            } catch (IOException e) {
-                e.printStackTrace();
-                // todo add modal
+
+        if (encryptTextBinding.get()) { // encrypting text
+            if (plainTextTextArea.getText().length() == 0) {
+                alert = new Alert(Alert.AlertType.WARNING,
+                        "Tekst do zaszyfrowania nie może byc pusty!");
+            } else {
+                byte[] original = plainTextTextArea.getText().getBytes(StandardCharsets.UTF_8);
+                byte[] encrypted = aes.encryptAllBytes(original);
+                String encryptedString = HexFormat.of().formatHex(encrypted);
+                cypherTextTextArea.setText(encryptedString);
+
+                alert = new Alert(Alert.AlertType.INFORMATION, "Pomyślnie zaszyfrowano tekst");
+            }
+        } else { // encrypting file
+            if (inputFile == null || outFile == null) {
+                alert = new Alert(Alert.AlertType.WARNING,
+                        "Należy wybrać plik wejściowy i wyjściowy");
+            } else {
+                try {
+                    aes.encryptFile(inputFile, outFile.getAbsolutePath());
+                    alert = new Alert(Alert.AlertType.INFORMATION, "Pomyślnie zaszyfrowano plik");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    alert = new Alert(Alert.AlertType.ERROR, e.getMessage());
+                }
             }
         }
+        alert.showAndWait();
     }
 
     @FXML
     public void decrypt() {
+        Alert alert;
         byte[] key;
         if (bitButton.isSelected()) {
             key = HexFormat.of().parseHex(keyTextField.textProperty().get());
@@ -148,19 +180,34 @@ public class Controller {
             key = keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII);
         }
         AES aes = new AES(key);
-        if (encryptTextBinding.get()) {
-            String s = cypherTextTextArea.getText();
-            byte[] cypherText = HexFormat.of().parseHex(s);
-            byte[] decrypted = aes.decryptAllBytes(cypherText);
-            String decryptedText = new String(decrypted, StandardCharsets.UTF_8);
-            plainTextTextArea.setText(decryptedText);
-        } else if (inputFile != null && outFile != null) {
-            try {
-                aes.decryptFile(inputFile, outFile.getAbsolutePath());
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                // todo add modal
+        if (encryptTextBinding.get()) { // decrypting text
+            if (cypherTextTextArea.getText().length() == 0) {
+                alert = new Alert(Alert.AlertType.WARNING,
+                        "Tekst do odszyfrowania nie może być pusty");
+            } else if (cypherTextTextArea.getText().length() % 16 != 0) {
+                alert = new Alert(Alert.AlertType.WARNING,
+                        "Długość zaszyfrowanego tekstu musi być wielokrotnością 16");
+            } else {
+                String s = cypherTextTextArea.getText();
+                byte[] cypherText = HexFormat.of().parseHex(s);
+                byte[] decrypted = aes.decryptAllBytes(cypherText);
+                String decryptedText = new String(decrypted, StandardCharsets.UTF_8);
+                plainTextTextArea.setText(decryptedText);
+                alert = new Alert(Alert.AlertType.INFORMATION, "Pomyślnie zdeszyfrowano tekst");
+            }
+        } else { // decrypting file
+            if (inputFile == null || outFile == null) {
+                alert = new Alert(Alert.AlertType.WARNING, "Należy wybrać plik wejściowy i wyjściowy");
+            } else {
+                try {
+                    aes.decryptFile(inputFile, outFile.getAbsolutePath());
+                    alert = new Alert(Alert.AlertType.INFORMATION, "Pomyślnie zaszyfrowano plik");
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    alert = new Alert(Alert.AlertType.ERROR, "Nie udało się zdeszyfrować pliku");
+                }
             }
         }
+        alert.showAndWait();
     }
 }

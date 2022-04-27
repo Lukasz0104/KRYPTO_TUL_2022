@@ -45,28 +45,20 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<FlowPane alignment="TOP_CENTER" columnHalignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="pl.lodz.p.it.krypto.view.Controller">
+<FlowPane alignment="TOP_CENTER" columnHalignment="CENTER" maxHeight="400.0" maxWidth="600.0" minHeight="400.0" minWidth="600.0" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="pl.lodz.p.it.krypto.view.Controller">
     <children>
-        <HBox alignment="CENTER" nodeOrientation="LEFT_TO_RIGHT" prefHeight="45.0" prefWidth="570.0">
+        <HBox alignment="CENTER" nodeOrientation="LEFT_TO_RIGHT" prefHeight="60.0" prefWidth="600.0" spacing="10.0">
             <children>
-                <Label text="Klucz szyfrowania">
-                    <padding>
-                        <Insets left="20.0" right="20.0" />
-                    </padding>
-                </Label>
-                <TextField fx:id="keyTextField" alignment="CENTER_RIGHT" prefHeight="35.0" prefWidth="358.0" promptText="Wprowadź klucz">
+                <Label text="Klucz szyfrowania:" />
+                <TextField fx:id="keyTextField" alignment="CENTER_RIGHT" prefHeight="35.0" prefWidth="325.0" promptText="Wprowadź klucz">
                     <font>
-                        <Font size="16.0" />
+                        <Font size="14.0" />
                     </font>
                 </TextField>
-            <RadioButton fx:id="bitButton" prefHeight="17.0" prefWidth="122.0" text="Klucz bitowy">
-                <padding>
-                    <Insets left="10.0" right="10.0" />
-                </padding>
-            </RadioButton>
+            <RadioButton fx:id="bitButton" text="Klucz bitowy" />
             </children>
         </HBox>
-        <HBox alignment="CENTER" prefHeight="55.0" prefWidth="487.0">
+        <HBox alignment="CENTER" prefHeight="55.0">
             <children>
                 <RadioButton fx:id="stringRadioButton" mnemonicParsing="false" text="Szyfrowanie tekstu">
                     <toggleGroup>
@@ -79,14 +71,14 @@
                 <RadioButton fx:id="fileRadioButton" mnemonicParsing="false" text="Szyfrowanie pliku" toggleGroup="$group" />
             </children>
         </HBox>
-        <HBox alignment="CENTER" prefHeight="59.0" prefWidth="426.0">
+        <HBox alignment="CENTER" prefHeight="59.0" prefWidth="600.0">
             <children>
-                <Button fx:id="encryptButton" mnemonicParsing="false" onAction="#encrypt" text="Zaszyfruj">
+                <Button fx:id="encryptButton" disable="true" mnemonicParsing="false" onAction="#encrypt" text="Zaszyfruj">
                     <HBox.margin>
                         <Insets left="30.0" right="30.0" />
                     </HBox.margin>
                 </Button>
-                <Button fx:id="decryptButton" mnemonicParsing="false" onAction="#decrypt" text="Deszyfruj">
+                <Button fx:id="decryptButton" disable="true" mnemonicParsing="false" onAction="#decrypt" text="Deszyfruj">
                     <HBox.margin>
                         <Insets left="30.0" right="30.0" />
                     </HBox.margin>
