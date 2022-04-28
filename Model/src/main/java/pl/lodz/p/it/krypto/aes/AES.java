@@ -16,6 +16,12 @@ public class AES {
         this.key = key;
     }
 
+    public void changeKey(byte[] newKey) {
+        if (newKey != null && newKey.length == 16 && !Arrays.equals(key, newKey)) {
+            System.arraycopy(newKey, 0, key, 0, 16);
+        }
+    }
+
     public byte[] encryptBlock(byte[] block) {
         byte[] encrypted = block.clone();
 

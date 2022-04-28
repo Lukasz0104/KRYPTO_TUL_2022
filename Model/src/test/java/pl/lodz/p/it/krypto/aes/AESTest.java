@@ -343,4 +343,14 @@ public class AESTest {
             fail();
         }
     }
+
+    @Test
+    public void changeKeyTest() {
+        aes = new AES(key1);
+        AES aes2 = new AES(key2);
+
+        aes.changeKey(key2);
+
+        assertArrayEquals(aes.encryptBlock(block1), aes2.encryptBlock(block1));
+    }
 }

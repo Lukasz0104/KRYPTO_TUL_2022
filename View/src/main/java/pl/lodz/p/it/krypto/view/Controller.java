@@ -28,6 +28,7 @@ public class Controller {
     private ResourceBundle rb;
     private boolean disableButtons = true;
     private BooleanBinding encryptTextBinding;
+    private AES aes;
 
     File inputFile;
     File outFile;
@@ -161,13 +162,7 @@ public class Controller {
     @FXML
     public void encrypt() {
         Alert alert;
-        byte[] key;
-        if (bitButton.isSelected()) {
-            key = HexFormat.of().parseHex(keyTextField.textProperty().get());
-        } else {
-            key = keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII);
-        }
-        AES aes = new AES(key);
+        changeKey();
 
         if (encryptTextBinding.get()) { // encrypting text
             if (plainTextTextArea.getText().length() == 0) {
@@ -205,13 +200,8 @@ public class Controller {
     @FXML
     public void decrypt() {
         Alert alert;
-        byte[] key;
-        if (bitButton.isSelected()) {
-            key = HexFormat.of().parseHex(keyTextField.textProperty().get());
-        } else {
-            key = keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII);
-        }
-        AES aes = new AES(key);
+        changeKey();
+
         if (encryptTextBinding.get()) { // decrypting text
             if (cypherTextTextArea.getText().length() == 0) {
                 alert = new Alert(AlertType.WARNING, rb.getString("error.emptyTextToDecrypt"));
@@ -248,6 +238,21 @@ public class Controller {
             }
         }
         alert.showAndWait();
+    }
+
+    private void changeKey() {
+        byte[] key;
+        if (bitButton.isSelected()) {
+            key = HexFormat.of().parseHex(keyTextField.textProperty().get());
+        } else {
+            key = keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII);
+        }
+
+        if (aes == null) {
+            aes = new AES(key);
+        } else {
+            aes.changeKey(key);
+        }
     }
 
     private void changeLanguage() {
