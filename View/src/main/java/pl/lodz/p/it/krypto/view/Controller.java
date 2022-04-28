@@ -4,11 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
+import java.util.Locale;
+import java.util.ResourceBundle;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
@@ -20,6 +25,7 @@ import javafx.stage.FileChooser;
 import pl.lodz.p.it.krypto.aes.AES;
 
 public class Controller {
+    private ResourceBundle rb;
     private boolean disableButtons = true;
     private BooleanBinding encryptTextBinding;
 
@@ -34,6 +40,9 @@ public class Controller {
 
     @FXML
     private RadioButton stringRadioButton;
+
+    @FXML
+    private RadioButton fileRadioButton;
 
     @FXML
     private Button encryptButton;
@@ -63,7 +72,28 @@ public class Controller {
     private Label outFilePath;
 
     @FXML
+    private ChoiceBox<String> languageSelection;
+
+    @FXML
+    private Label keyLabel;
+
+    @FXML
+    private Label languageLabel;
+
+    @FXML
+    private Label chosenFileLabel1;
+
+    @FXML
+    private Label chosenFileLabel2;
+
+
+    @FXML
     public void initialize() {
+        languageSelection.setItems(FXCollections.observableArrayList("pl", "en"));
+
+        languageSelection.setOnAction(e -> changeLanguage());
+        languageSelection.setValue("pl");
+
         encryptTextBinding = Bindings.equal(stringRadioButton, group.selectedToggleProperty());
         stringRadioButton.setSelected(true);
 
@@ -97,8 +127,6 @@ public class Controller {
             }
         });
 
-        keyTextField.textProperty().set("");
-
         textControlsContainer.visibleProperty().bind(encryptTextBinding);
         textControlsContainer.managedProperty().bind(textControlsContainer.visibleProperty());
 
@@ -109,7 +137,7 @@ public class Controller {
     @FXML
     public void chooseFile() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Wybierz plik");
+        fileChooser.setTitle(rb.getString("button.file.input"));
         inputFile = fileChooser.showOpenDialog(App.stage);
         if (inputFile != null) {
             inFilePath.setText(inputFile.getAbsolutePath());
@@ -121,7 +149,7 @@ public class Controller {
     @FXML
     public void saveFile() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Wybierz plik wyjściowy");
+        fileChooser.setTitle(rb.getString("button.file.output"));
         outFile = fileChooser.showSaveDialog(App.stage);
         if (outFile != null) {
             outFilePath.setText(outFile.getAbsolutePath());
@@ -143,27 +171,31 @@ public class Controller {
 
         if (encryptTextBinding.get()) { // encrypting text
             if (plainTextTextArea.getText().length() == 0) {
-                alert = new Alert(Alert.AlertType.WARNING,
-                        "Tekst do zaszyfrowania nie może byc pusty!");
-            } else {
-                byte[] original = plainTextTextArea.getText().getBytes(StandardCharsets.UTF_8);
-                byte[] encrypted = aes.encryptAllBytes(original);
-                String encryptedString = HexFormat.of().formatHex(encrypted);
-                cypherTextTextArea.setText(encryptedString);
+                alert = new Alert(AlertType.WARNING, rb.getString("error.emptyTextToEncrypt"));
 
-                alert = new Alert(Alert.AlertType.INFORMATION, "Pomyślnie zaszyfrowano tekst");
+            } else {
+                try {
+                    byte[] original = plainTextTextArea.getText().getBytes(StandardCharsets.UTF_8);
+                    byte[] encrypted = aes.encryptAllBytes(original);
+                    String encryptedString = HexFormat.of().formatHex(encrypted);
+                    cypherTextTextArea.setText(encryptedString);
+
+                    alert = new Alert(AlertType.INFORMATION, rb.getString("success.text.encryption"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    alert = new Alert(AlertType.ERROR, rb.getString("error.text.encryptFail"));
+                }
             }
         } else { // encrypting file
             if (inputFile == null || outFile == null) {
-                alert = new Alert(Alert.AlertType.WARNING,
-                        "Należy wybrać plik wejściowy i wyjściowy");
+                alert = new Alert(AlertType.WARNING, rb.getString("error.fileNotChosen"));
             } else {
                 try {
                     aes.encryptFile(inputFile, outFile.getAbsolutePath());
-                    alert = new Alert(Alert.AlertType.INFORMATION, "Pomyślnie zaszyfrowano plik");
+                    alert = new Alert(AlertType.INFORMATION, rb.getString("success.file.encryption"));
                 } catch (IOException e) {
                     e.printStackTrace();
-                    alert = new Alert(Alert.AlertType.ERROR, e.getMessage());
+                    alert = new Alert(AlertType.ERROR, rb.getString("error.file.encryptFail"));
                 }
             }
         }
@@ -182,32 +214,58 @@ public class Controller {
         AES aes = new AES(key);
         if (encryptTextBinding.get()) { // decrypting text
             if (cypherTextTextArea.getText().length() == 0) {
-                alert = new Alert(Alert.AlertType.WARNING,
-                        "Tekst do odszyfrowania nie może być pusty");
+                alert = new Alert(AlertType.WARNING, rb.getString("error.emptyTextToDecrypt"));
+
             } else if (cypherTextTextArea.getText().length() % 16 != 0) {
-                alert = new Alert(Alert.AlertType.WARNING,
-                        "Długość zaszyfrowanego tekstu musi być wielokrotnością 16");
+                alert = new Alert(AlertType.WARNING, rb.getString("error.invalidTextToDecryptLength"));
+
             } else {
-                String s = cypherTextTextArea.getText();
-                byte[] cypherText = HexFormat.of().parseHex(s);
-                byte[] decrypted = aes.decryptAllBytes(cypherText);
-                String decryptedText = new String(decrypted, StandardCharsets.UTF_8);
-                plainTextTextArea.setText(decryptedText);
-                alert = new Alert(Alert.AlertType.INFORMATION, "Pomyślnie zdeszyfrowano tekst");
+                try {
+                    String s = cypherTextTextArea.getText();
+                    byte[] cypherText = HexFormat.of().parseHex(s);
+                    byte[] decrypted = aes.decryptAllBytes(cypherText);
+                    String decryptedText = new String(decrypted, StandardCharsets.UTF_8);
+                    plainTextTextArea.setText(decryptedText);
+
+                    alert = new Alert(AlertType.INFORMATION, rb.getString("success.text.decryption"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    alert = new Alert(AlertType.ERROR, rb.getString("error.text.decryptFail"));
+                }
+
             }
         } else { // decrypting file
             if (inputFile == null || outFile == null) {
-                alert = new Alert(Alert.AlertType.WARNING, "Należy wybrać plik wejściowy i wyjściowy");
+                alert = new Alert(AlertType.WARNING, rb.getString("error.fileNotChosen"));
             } else {
                 try {
                     aes.decryptFile(inputFile, outFile.getAbsolutePath());
-                    alert = new Alert(Alert.AlertType.INFORMATION, "Pomyślnie zaszyfrowano plik");
+                    alert = new Alert(AlertType.INFORMATION, rb.getString("success.file.decryption"));
                 } catch (IOException ex) {
                     ex.printStackTrace();
-                    alert = new Alert(Alert.AlertType.ERROR, "Nie udało się zdeszyfrować pliku");
+                    alert = new Alert(AlertType.ERROR, rb.getString("error.file.decryptFail"));
                 }
             }
         }
         alert.showAndWait();
+    }
+
+    private void changeLanguage() {
+        String lang = languageSelection.getValue();
+        Locale.setDefault(Locale.forLanguageTag(lang));
+        rb = ResourceBundle.getBundle(App.RESOURCE_BUNDLE_NAME);
+
+        keyTextField.setPromptText(rb.getString("prompt.key"));
+        bitButton.setText(rb.getString("binaryKey"));
+        stringRadioButton.setText(rb.getString("textEncryption"));
+        fileRadioButton.setText(rb.getString("fileEncryption"));
+        encryptButton.setText(rb.getString("button.encrypt"));
+        decryptButton.setText(rb.getString("button.decrypt"));
+        plainTextTextArea.setPromptText(rb.getString("prompt.plainText"));
+        cypherTextTextArea.setPromptText(rb.getString("prompt.cypherText"));
+        keyLabel.setText(rb.getString("key"));
+        languageLabel.setText(rb.getString("chooseLanguage"));
+        chosenFileLabel1.setText(rb.getString("chosenFile"));
+        chosenFileLabel2.setText(rb.getString("chosenFile"));
     }
 }
