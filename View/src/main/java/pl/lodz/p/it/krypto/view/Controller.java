@@ -4,10 +4,17 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
+import java.util.Locale;
+import java.util.ResourceBundle;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
@@ -19,8 +26,10 @@ import javafx.stage.FileChooser;
 import pl.lodz.p.it.krypto.aes.AES;
 
 public class Controller {
+    private ResourceBundle rb;
     private boolean disableButtons = true;
     private BooleanBinding encryptTextBinding;
+    private AES aes;
 
     File inputFile;
     File outFile;
@@ -33,6 +42,9 @@ public class Controller {
 
     @FXML
     private RadioButton stringRadioButton;
+
+    @FXML
+    private RadioButton fileRadioButton;
 
     @FXML
     private Button encryptButton;
@@ -62,27 +74,33 @@ public class Controller {
     private Label outFilePath;
 
     @FXML
+    private ChoiceBox<String> languageSelection;
+
+    @FXML
+    private Label keyLabel;
+
+    @FXML
+    private Label languageLabel;
+
+    @FXML
+    private Label chosenFileLabel1;
+
+    @FXML
+    private Label chosenFileLabel2;
+
+
+    @FXML
     public void initialize() {
-        encryptButton.disableProperty().set(disableButtons);
-        decryptButton.disableProperty().set(disableButtons);
+        languageSelection.setItems(FXCollections.observableArrayList("pl", "en"));
+
+        languageSelection.setOnAction(e -> changeLanguage());
+        languageSelection.setValue("pl");
+
         encryptTextBinding = Bindings.equal(stringRadioButton, group.selectedToggleProperty());
         stringRadioButton.setSelected(true);
 
-        keyTextField.textProperty().addListener((observableValue, oldValue, newValue) -> {
-            if (newValue != null && !newValue.equals(oldValue)) {
-                if (bitButton.isSelected()) {
-                    disableButtons = true;
-                    if (newValue.matches("^[0-9a-fA-F]{32}$")) {
-                        disableButtons = (HexFormat.of().parseHex(newValue).length != 16);
-                    }
-                } else if (!bitButton.isSelected()) {
-                    disableButtons = newValue.getBytes(StandardCharsets.US_ASCII).length != 16;
-                }
-                encryptButton.disableProperty().set(disableButtons);
-                decryptButton.disableProperty().set(disableButtons);
-            }
-        });
-        keyTextField.textProperty().set("");
+        keyTextField.textProperty().addListener(this::keyTextFieldChangeHandler);
+        bitButton.selectedProperty().addListener(this::bitButtonChangeHandler);
 
         textControlsContainer.visibleProperty().bind(encryptTextBinding);
         textControlsContainer.managedProperty().bind(textControlsContainer.visibleProperty());
@@ -92,9 +110,9 @@ public class Controller {
     }
 
     @FXML
-    public void chooseFile() {
+    public void chooseInputFile() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Wybierz plik");
+        fileChooser.setTitle(rb.getString("button.file.input"));
         inputFile = fileChooser.showOpenDialog(App.stage);
         if (inputFile != null) {
             inFilePath.setText(inputFile.getAbsolutePath());
@@ -104,9 +122,9 @@ public class Controller {
     }
 
     @FXML
-    public void saveFile() {
+    public void chooseOutputFile() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Wybierz plik wyjściowy");
+        fileChooser.setTitle(rb.getString("button.file.output"));
         outFile = fileChooser.showSaveDialog(App.stage);
         if (outFile != null) {
             outFilePath.setText(outFile.getAbsolutePath());
@@ -117,50 +135,152 @@ public class Controller {
 
     @FXML
     public void encrypt() {
-        byte[] key;
-        if (bitButton.isSelected()) {
-            key = HexFormat.of().parseHex(keyTextField.textProperty().get());
-        } else {
-            key = keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII);
-        }
-        AES aes = new AES(key);
-        if (encryptTextBinding.get()) {
-            byte[] original = plainTextTextArea.getText().getBytes(StandardCharsets.UTF_8);
-            byte[] encrypted = aes.encryptAllBytes(original);
-            String encryptedString = HexFormat.of().formatHex(encrypted);
-            cypherTextTextArea.setText(encryptedString);
-        } else if (inputFile != null && outFile != null) {
-            try {
-                aes.encryptFile(inputFile, outFile.getAbsolutePath());
-            } catch (IOException e) {
-                e.printStackTrace();
-                // todo add modal
+        Alert alert;
+        changeKey();
+
+        if (encryptTextBinding.get()) { // encrypting text
+            if (plainTextTextArea.getText().length() == 0) {
+                alert = new Alert(AlertType.WARNING, rb.getString("error.emptyTextToEncrypt"));
+
+            } else {
+                try {
+                    byte[] original = plainTextTextArea.getText().getBytes(StandardCharsets.UTF_8);
+                    byte[] encrypted = aes.encryptAllBytes(original);
+                    String encryptedString = HexFormat.of().formatHex(encrypted);
+                    cypherTextTextArea.setText(encryptedString);
+
+                    alert = new Alert(AlertType.INFORMATION, rb.getString("success.text.encryption"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    alert = new Alert(AlertType.ERROR, rb.getString("error.text.encryptFail"));
+                }
+            }
+        } else { // encrypting file
+            if (inputFile == null || outFile == null) {
+                alert = new Alert(AlertType.WARNING, rb.getString("error.fileNotChosen"));
+            } else {
+                try {
+                    aes.encryptFile(inputFile, outFile.getAbsolutePath());
+                    alert = new Alert(AlertType.INFORMATION, rb.getString("success.file.encryption"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    alert = new Alert(AlertType.ERROR, rb.getString("error.file.encryptFail"));
+                }
             }
         }
+        alert.showAndWait();
     }
 
     @FXML
     public void decrypt() {
+        Alert alert;
+        changeKey();
+
+        if (encryptTextBinding.get()) { // decrypting text
+            if (cypherTextTextArea.getText().length() == 0) {
+                alert = new Alert(AlertType.WARNING, rb.getString("error.emptyTextToDecrypt"));
+
+            } else if (cypherTextTextArea.getText().length() % 16 != 0) {
+                alert = new Alert(AlertType.WARNING, rb.getString("error.invalidTextToDecryptLength"));
+
+            } else {
+                try {
+                    String s = cypherTextTextArea.getText();
+                    byte[] cypherText = HexFormat.of().parseHex(s);
+                    byte[] decrypted = aes.decryptAllBytes(cypherText);
+                    String decryptedText = new String(decrypted, StandardCharsets.UTF_8);
+                    plainTextTextArea.setText(decryptedText);
+
+                    alert = new Alert(AlertType.INFORMATION, rb.getString("success.text.decryption"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    alert = new Alert(AlertType.ERROR, rb.getString("error.text.decryptFail"));
+                }
+
+            }
+        } else { // decrypting file
+            if (inputFile == null || outFile == null) {
+                alert = new Alert(AlertType.WARNING, rb.getString("error.fileNotChosen"));
+            } else {
+                try {
+                    aes.decryptFile(inputFile, outFile.getAbsolutePath());
+                    alert = new Alert(AlertType.INFORMATION, rb.getString("success.file.decryption"));
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    alert = new Alert(AlertType.ERROR, rb.getString("error.file.decryptFail"));
+                }
+            }
+        }
+        alert.showAndWait();
+    }
+
+    private void changeKey() {
         byte[] key;
         if (bitButton.isSelected()) {
             key = HexFormat.of().parseHex(keyTextField.textProperty().get());
         } else {
             key = keyTextField.textProperty().get().getBytes(StandardCharsets.US_ASCII);
         }
-        AES aes = new AES(key);
-        if (encryptTextBinding.get()) {
-            String s = cypherTextTextArea.getText();
-            byte[] cypherText = HexFormat.of().parseHex(s);
-            byte[] decrypted = aes.decryptAllBytes(cypherText);
-            String decryptedText = new String(decrypted, StandardCharsets.UTF_8);
-            plainTextTextArea.setText(decryptedText);
-        } else if (inputFile != null && outFile != null) {
-            try {
-                aes.decryptFile(inputFile, outFile.getAbsolutePath());
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                // todo add modal
+
+        if (aes == null) {
+            aes = new AES(key);
+        } else {
+            aes.changeKey(key);
+        }
+    }
+
+    private void changeLanguage() {
+        String lang = languageSelection.getValue();
+        Locale.setDefault(Locale.forLanguageTag(lang));
+        rb = ResourceBundle.getBundle(App.RESOURCE_BUNDLE_NAME);
+
+        keyTextField.setPromptText(rb.getString("prompt.key"));
+        bitButton.setText(rb.getString("binaryKey"));
+        stringRadioButton.setText(rb.getString("textEncryption"));
+        fileRadioButton.setText(rb.getString("fileEncryption"));
+        encryptButton.setText(rb.getString("button.encrypt"));
+        decryptButton.setText(rb.getString("button.decrypt"));
+        plainTextTextArea.setPromptText(rb.getString("prompt.plainText"));
+        cypherTextTextArea.setPromptText(rb.getString("prompt.cypherText"));
+        keyLabel.setText(rb.getString("key"));
+        languageLabel.setText(rb.getString("chooseLanguage"));
+        chosenFileLabel1.setText(rb.getString("chosenFile"));
+        chosenFileLabel2.setText(rb.getString("chosenFile"));
+    }
+
+    private void keyTextFieldChangeHandler(ObservableValue<? extends String> observableValue,
+                                           String oldValue,
+                                           String newValue) {
+
+        if (newValue != null && !newValue.equals(oldValue)) {
+            if (bitButton.isSelected()) {
+                disableButtons = true;
+                if (newValue.matches("^[0-9a-fA-F]{32}$")) {
+                    disableButtons = HexFormat.of().parseHex(newValue).length != 16;
+                }
+            } else if (!bitButton.isSelected()) {
+                disableButtons = newValue.getBytes(StandardCharsets.US_ASCII).length != 16;
             }
+            encryptButton.disableProperty().set(disableButtons);
+            decryptButton.disableProperty().set(disableButtons);
+        }
+    }
+
+    private void bitButtonChangeHandler(ObservableValue<? extends Boolean> observableValue,
+                                        Boolean oldValue,
+                                        Boolean newValue) {
+
+        if (newValue != null && newValue != oldValue) {
+            String enteredKey = keyTextField.getText();
+            if (newValue) {
+                disableButtons = !enteredKey.matches("^[0-9a-fA-F]{32}$")
+                        || HexFormat.of().parseHex(enteredKey).length != 16;
+            } else {
+                disableButtons = enteredKey.getBytes(StandardCharsets.US_ASCII).length != 16;
+            }
+
+            encryptButton.disableProperty().set(disableButtons);
+            decryptButton.disableProperty().set(disableButtons);
         }
     }
 }

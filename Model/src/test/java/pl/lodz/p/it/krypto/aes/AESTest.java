@@ -168,7 +168,11 @@ public class AESTest {
                 (byte) 0xf6, (byte) 0xc2, (byte) 0x9d, (byte) 0xb0,
                 0x25, (byte) 0xad, (byte) 0xa0, 0x05
         };
-        assertArrayEquals(expected, aes.encryptAllBytes(block));
+        try {
+            assertArrayEquals(expected, aes.encryptAllBytes(block));
+        } catch (IOException e) {
+            fail();
+        }
     }
 
     @Test
@@ -195,8 +199,11 @@ public class AESTest {
                 0x5c, 0x47, 0x54, (byte) 0xd0,
                 0x5b, 0x5b, 0x3c, (byte) 0xfe
         };
-
-        assertArrayEquals(expected, aes.encryptAllBytes(block));
+        try {
+            assertArrayEquals(expected, aes.encryptAllBytes(block));
+        } catch (IOException e) {
+            fail();
+        }
     }
 
     @Test
@@ -274,7 +281,11 @@ public class AESTest {
                 (byte) 0xa8, (byte) 0x9d, 0x27, 0x32,
                 0x6d, (byte) 0x94, 0x7f, 0x12
         };
-        assertArrayEquals(decrypted, aes.decryptAllBytes(encrypted));
+        try {
+            assertArrayEquals(decrypted, aes.decryptAllBytes(encrypted));
+        } catch (IOException e) {
+            fail();
+        }
     }
 
     @Test
@@ -285,10 +296,14 @@ public class AESTest {
                 0x03, 0x03, 0x07, 0x07,
                 0x0f, 0x0f, 0x1f
         };
-        byte[] encrypted = aes.encryptAllBytes(block);
-        byte[] decrypted = aes.decryptAllBytes(encrypted);
+        try {
+            byte[] encrypted = aes.encryptAllBytes(block);
+            byte[] decrypted = aes.decryptAllBytes(encrypted);
 
-        assertArrayEquals(block, decrypted);
+            assertArrayEquals(block, decrypted);
+        } catch (IOException e) {
+            fail();
+        }
     }
 
     @Test
@@ -327,5 +342,15 @@ public class AESTest {
             e.printStackTrace();
             fail();
         }
+    }
+
+    @Test
+    public void changeKeyTest() {
+        aes = new AES(key1);
+        AES aes2 = new AES(key2);
+
+        aes.changeKey(key2);
+
+        assertArrayEquals(aes.encryptBlock(block1), aes2.encryptBlock(block1));
     }
 }

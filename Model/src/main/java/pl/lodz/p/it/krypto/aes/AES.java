@@ -4,19 +4,22 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
 public class AES {
     private final byte[] key;
-    // private final int Nb = 4;
     private final int numberOfRounds = 10;
-    // private final int Nk = 4;
 
     public AES(byte[] key) {
         this.key = key;
+    }
+
+    public void changeKey(byte[] newKey) {
+        if (newKey != null && newKey.length == 16 && !Arrays.equals(key, newKey)) {
+            System.arraycopy(newKey, 0, key, 0, 16);
+        }
     }
 
     public byte[] encryptBlock(byte[] block) {
@@ -85,28 +88,25 @@ public class AES {
     }
 
     private void shiftRows(byte[] encrypted) {
-        // TODO rewrite it with loops
-        {
-            byte t = encrypted[1];
-            encrypted[1] = encrypted[5];
-            encrypted[5] = encrypted[9];
-            encrypted[9] = encrypted[13];
-            encrypted[13] = t;
+        byte t = encrypted[1];
+        encrypted[1] = encrypted[5];
+        encrypted[5] = encrypted[9];
+        encrypted[9] = encrypted[13];
+        encrypted[13] = t;
 
-            for (int i = 0; i < 2; i++) {
-                t = encrypted[2];
-                encrypted[2] = encrypted[6];
-                encrypted[6] = encrypted[10];
-                encrypted[10] = encrypted[14];
-                encrypted[14] = t;
-            }
-
-            t = encrypted[15];
-            encrypted[15] = encrypted[11];
-            encrypted[11] = encrypted[7];
-            encrypted[7] = encrypted[3];
-            encrypted[3] = t;
+        for (int i = 0; i < 2; i++) {
+            t = encrypted[2];
+            encrypted[2] = encrypted[6];
+            encrypted[6] = encrypted[10];
+            encrypted[10] = encrypted[14];
+            encrypted[14] = t;
         }
+
+        t = encrypted[15];
+        encrypted[15] = encrypted[11];
+        encrypted[11] = encrypted[7];
+        encrypted[7] = encrypted[3];
+        encrypted[3] = t;
     }
 
     public int[][] expandKey() {
@@ -171,7 +171,7 @@ public class AES {
         return output;
     }
 
-    public byte[] encryptAllBytes(byte[] bytes) {
+    public byte[] encryptAllBytes(byte[] bytes) throws IOException {
         byte[] encrypted;
         int size;
         if (bytes.length % 16 == 0) {
@@ -200,22 +200,16 @@ public class AES {
                 Arrays.fill(buffer, (byte) 0);
             } while (bais.available() > 0);
 
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         return encrypted;
-    }
-
-    public byte[] encryptString(String inp) {
-        return encryptAllBytes(inp.getBytes());
     }
 
     public void encryptFile(File inputFile, String outFile)
             throws IOException {
 
         try (FileInputStream fis = new FileInputStream(inputFile);
-                FileOutputStream fos = new FileOutputStream(outFile)) {
+             FileOutputStream fos = new FileOutputStream(outFile)) {
 
             byte[] encrypted = encryptAllBytes(fis.readAllBytes());
             fos.write(encrypted);
@@ -322,7 +316,7 @@ public class AES {
         block[15] = t;
     }
 
-    public byte[] decryptAllBytes(byte[] bytes) {
+    public byte[] decryptAllBytes(byte[] bytes) throws IOException {
         ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
 
         byte[] buffer = new byte[16];
@@ -349,17 +343,15 @@ public class AES {
                 }
             }
             decryptedStream.write(decryptedBuffer, 0, count);
-        } catch (IOException ex) {
-            ex.printStackTrace();
         }
 
         return decryptedStream.toByteArray();
     }
 
     public void decryptFile(File encryptedFile, String decryptedFilePath)
-            throws FileNotFoundException, IOException {
+            throws IOException {
         try (FileInputStream fis = new FileInputStream(encryptedFile);
-                FileOutputStream fos = new FileOutputStream(decryptedFilePath)) {
+             FileOutputStream fos = new FileOutputStream(decryptedFilePath)) {
 
             fos.write(decryptAllBytes(fis.readAllBytes()));
         }
