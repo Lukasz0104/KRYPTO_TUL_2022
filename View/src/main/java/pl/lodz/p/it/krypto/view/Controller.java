@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -98,35 +99,8 @@ public class Controller {
         encryptTextBinding = Bindings.equal(stringRadioButton, group.selectedToggleProperty());
         stringRadioButton.setSelected(true);
 
-        keyTextField.textProperty().addListener((observableValue, oldValue, newValue) -> {
-            if (newValue != null && !newValue.equals(oldValue)) {
-                if (bitButton.isSelected()) {
-                    disableButtons = true;
-                    if (newValue.matches("^[0-9a-fA-F]{32}$")) {
-                        disableButtons = HexFormat.of().parseHex(newValue).length != 16;
-                    }
-                } else if (!bitButton.isSelected()) {
-                    disableButtons = newValue.getBytes(StandardCharsets.US_ASCII).length != 16;
-                }
-                encryptButton.disableProperty().set(disableButtons);
-                decryptButton.disableProperty().set(disableButtons);
-            }
-        });
-
-        bitButton.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
-            if (newValue != null && newValue != oldValue) {
-                String enteredKey = keyTextField.getText();
-                if (newValue) {
-                    disableButtons = !enteredKey.matches("^[0-9a-fA-F]{32}$")
-                            || HexFormat.of().parseHex(enteredKey).length != 16;
-                } else {
-                    disableButtons = enteredKey.getBytes(StandardCharsets.US_ASCII).length != 16;
-                }
-
-                encryptButton.disableProperty().set(disableButtons);
-                decryptButton.disableProperty().set(disableButtons);
-            }
-        });
+        keyTextField.textProperty().addListener(this::keyTextFieldChangeHandler);
+        bitButton.selectedProperty().addListener(this::bitButtonChangeHandler);
 
         textControlsContainer.visibleProperty().bind(encryptTextBinding);
         textControlsContainer.managedProperty().bind(textControlsContainer.visibleProperty());
@@ -136,7 +110,7 @@ public class Controller {
     }
 
     @FXML
-    public void chooseFile() {
+    public void chooseInputFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(rb.getString("button.file.input"));
         inputFile = fileChooser.showOpenDialog(App.stage);
@@ -148,7 +122,7 @@ public class Controller {
     }
 
     @FXML
-    public void saveFile() {
+    public void chooseOutputFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(rb.getString("button.file.output"));
         outFile = fileChooser.showSaveDialog(App.stage);
@@ -272,5 +246,41 @@ public class Controller {
         languageLabel.setText(rb.getString("chooseLanguage"));
         chosenFileLabel1.setText(rb.getString("chosenFile"));
         chosenFileLabel2.setText(rb.getString("chosenFile"));
+    }
+
+    private void keyTextFieldChangeHandler(ObservableValue<? extends String> observableValue,
+                                           String oldValue,
+                                           String newValue) {
+
+        if (newValue != null && !newValue.equals(oldValue)) {
+            if (bitButton.isSelected()) {
+                disableButtons = true;
+                if (newValue.matches("^[0-9a-fA-F]{32}$")) {
+                    disableButtons = HexFormat.of().parseHex(newValue).length != 16;
+                }
+            } else if (!bitButton.isSelected()) {
+                disableButtons = newValue.getBytes(StandardCharsets.US_ASCII).length != 16;
+            }
+            encryptButton.disableProperty().set(disableButtons);
+            decryptButton.disableProperty().set(disableButtons);
+        }
+    }
+
+    private void bitButtonChangeHandler(ObservableValue<? extends Boolean> observableValue,
+                                        Boolean oldValue,
+                                        Boolean newValue) {
+
+        if (newValue != null && newValue != oldValue) {
+            String enteredKey = keyTextField.getText();
+            if (newValue) {
+                disableButtons = !enteredKey.matches("^[0-9a-fA-F]{32}$")
+                        || HexFormat.of().parseHex(enteredKey).length != 16;
+            } else {
+                disableButtons = enteredKey.getBytes(StandardCharsets.US_ASCII).length != 16;
+            }
+
+            encryptButton.disableProperty().set(disableButtons);
+            decryptButton.disableProperty().set(disableButtons);
+        }
     }
 }

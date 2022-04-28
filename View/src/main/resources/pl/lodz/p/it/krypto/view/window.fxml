@@ -77,7 +77,7 @@
                 </Button>
             </children>
         </HBox>
-        <Pane fx:id="content" prefHeight="200.0" prefWidth="500.0">
+        <Pane prefHeight="200.0" prefWidth="500.0">
          <children>
             <HBox fx:id="textControlsContainer" alignment="CENTER" prefHeight="200.0" prefWidth="500.0">
                <children>
@@ -95,7 +95,7 @@
             </HBox>
             <VBox fx:id="fileControlsContainer" alignment="CENTER" prefHeight="200.0" prefWidth="500.0" visible="false">
                <children>
-                  <Button fx:id="fileChoiceButton" mnemonicParsing="false" onAction="#chooseFile" text="%button.file.input" />
+                  <Button mnemonicParsing="false" onAction="#chooseInputFile" text="%button.file.input" />
                   <VBox alignment="TOP_CENTER">
                      <children>
                         <Label fx:id="chosenFileLabel1" text="%chosenFile">
@@ -111,7 +111,7 @@
                         <Insets left="25.0" right="25.0" />
                      </padding>
                   </VBox>
-                  <Button fx:id="directoryChoiceButton" mnemonicParsing="false" onAction="#saveFile" text="%button.file.output" />
+                  <Button mnemonicParsing="false" onAction="#chooseOutputFile" text="%button.file.output" />
                   <VBox alignment="TOP_CENTER">
                      <children>
                         <Label fx:id="chosenFileLabel2" text="%chosenFile">

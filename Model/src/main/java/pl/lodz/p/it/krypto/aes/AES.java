@@ -88,28 +88,25 @@ public class AES {
     }
 
     private void shiftRows(byte[] encrypted) {
-        // TODO rewrite it with loops
-        {
-            byte t = encrypted[1];
-            encrypted[1] = encrypted[5];
-            encrypted[5] = encrypted[9];
-            encrypted[9] = encrypted[13];
-            encrypted[13] = t;
+        byte t = encrypted[1];
+        encrypted[1] = encrypted[5];
+        encrypted[5] = encrypted[9];
+        encrypted[9] = encrypted[13];
+        encrypted[13] = t;
 
-            for (int i = 0; i < 2; i++) {
-                t = encrypted[2];
-                encrypted[2] = encrypted[6];
-                encrypted[6] = encrypted[10];
-                encrypted[10] = encrypted[14];
-                encrypted[14] = t;
-            }
-
-            t = encrypted[15];
-            encrypted[15] = encrypted[11];
-            encrypted[11] = encrypted[7];
-            encrypted[7] = encrypted[3];
-            encrypted[3] = t;
+        for (int i = 0; i < 2; i++) {
+            t = encrypted[2];
+            encrypted[2] = encrypted[6];
+            encrypted[6] = encrypted[10];
+            encrypted[10] = encrypted[14];
+            encrypted[14] = t;
         }
+
+        t = encrypted[15];
+        encrypted[15] = encrypted[11];
+        encrypted[11] = encrypted[7];
+        encrypted[7] = encrypted[3];
+        encrypted[3] = t;
     }
 
     public int[][] expandKey() {
